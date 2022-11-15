@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!--  static 폴더 사용-->
+    {% load static %}
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Insert title here</title>
+    <!--  css 적용-->
+    <link rel="stylesheet" href="{% static 'main/style.css' %}">
+</head>
+<body>
+<div class="all">
+    <div style="margin-top : 20px; height : 160px;">
+        <div class="sensor_data">
+            <div>
+                <div style="font-size: 30px; font-weight: bold; float : left;">현재 습도:&nbsp;</div>
+                <div id="humidity" class="data"></div>
+                <div style="font-size: 30px; font-weight: bold; float : left;">&nbsp;%</div>
+            </div>
+
+            <div style="clear:both;">
+                <div style="width : 100%; height: 20px;"></div>
+                <div style="font-size: 30px; font-weight: bold; float : left;">현재 온도:&nbsp;</div>
+                <div id="temperature" class="data"></div>
+                <div style="font-size: 30px; font-weight: bold; float : left;">&nbsp;°C</div>
+            </div>
+        </div>
+
+        <div class="time_data">
+            <div style="font-size: 30px; font-weight: bold;">현재 시각:</div>
+            <div id="day_data" style="font-size: 30px;"></div>
+            <div id="time_data" style="font-size: 30px;"></div>
+        </div>
+        <div style="wdith : 10%;float:left;">
+            <div id="sun" style="font-size: 50px;"></div>
+        </div>
+
+    </div>
+
+    <div class="crops_area">
+        <div style="font-size: 30px; font-weight: bold; wdith: 100%;">작물 상태:&nbsp;</div>
+        <!--  <div class="chard"></div>-->
+        <div class="chard-data">
+            <div style="font-size: 20px; font-weight: bold;">작물명 : 근대</div>
+            <img class="chard" src="{%static 'main/img/근대.jpg' %}">
+            <div style="float: left;">
+                <div style="font-size: 20px;">심은 기간 : 2일</div>
+                <div>
+                    <div style="font-size: 20px; float : left;">작물 습도 상태 :&nbsp;</div>
+                    <div id="chard_hum_message" style="font-size: 20px;float : left;"></div>
+                </div>
+                <div style="clear:both;">
+                    <div style="font-size: 20px; float : left;">작물 온도 상태 :&nbsp;</div>
+                    <div id="chard_tem_message" style="font-size: 20px;float : left;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!--나중에 지울거-->
+<!--<form>-->
+<!--    &lt;!&ndash; 서버로 메시지를 보낼 텍스트 박스 &ndash;&gt;-->
+<!--    <input id="textMessage" type="text">-->
+<!--    &lt;!&ndash; 전송 버튼 &ndash;&gt;-->
+<!--    <input onclick="sendMessage()" value="Send" type="button">-->
+<!--    &lt;!&ndash; 접속 종료 버튼 &ndash;&gt;-->
+<!--    <input onclick="disconnect()" value="Disconnect" type="button">-->
+<!--</form>-->
+<!--<br/>-->
+<!--&lt;!&ndash; 출력 area &ndash;&gt;-->
+<!--<textarea id="messageTextArea" rows="10" cols="50"></textarea>-->
+
+
+<script type="text/javascript">
+    //사용할 변수 선언
+    var hum, tem, time, k, data_array, day, time, time_array, time_tmp, sun;
+
+    //근대 상태
+    //습도 : 너무 낮아 / 낮아요 / 적당해요 / 높아요 / 너무 심함
+    var chard_hum_message = document.getElementById("chard_hum_message"); //근대 습도 메세지
+    var chard_tem_message = document.getElementById("chard_tem_message"); //근대 온도 메세지
+
+    // 웹 서버를 접속
+    var webSocket = new WebSocket("ws://localhost:8765");
+
+    // 웹 서버와의 통신을 주고 받은 결과를 출력할 오브젝트
+    var messageTextArea = document.getElementById("messageTextArea");
+    var humidity = document.getElementById("humidity"); //습도 데이터
+    var temperature = document.getElementById("temperature"); //온도 데이터
+    var day_data = document.getElementById("day_data"); //온도 데이터
+    var time_data = document.getElementById("time_data"); //시간 데이터
+    var sun = document.getElementById("sun"); //낮,밤 데이터
+
+
+
+
+
+    // 소켓 접속이 되면 호출되는 함수
+    webSocket.onopen = function(message){
+        console.log("Server connect...")
+      //messageTextArea.value += "Server connect...\n";
+    };
+    // 소켓 접속이 끝나면 호출되는 함수
+    webSocket.onclose = function(message){
+        console.log("Server Disconnect...")
+      //messageTextArea.value += "Server Disconnect...\n";
+    };
+    // 소켓 통신 중에 에러가 발생되면 호출되는 함수
+    webSocket.onerror = function(message){
+        console.log("error...")
+      //messageTextArea.value += "error...\n";
+    };
+
+    // 소켓 서버로 부터 메시지가 오면 호출되는 함수.
+    webSocket.onmessage = function(message){
+      // 데이터 저장
+      k = message.data; //k : string type
+      data_array = k.split(',');
+      time_array = data_array[2].split('T');
+      hum = parseFloat(data_array[0]);
+      tem = parseFloat(data_array[1]);
+      day = time_array[0];
+      time = time_array[1];
+
+      time_tmp = time.split(':');
+      time_tmp = parseInt(time_tmp[0]);
+      if (time_tmp <= 6 || time_tmp>=18){
+        sun.innerHTML = "밤";
+      } else {
+        sun.innerHTML = "낮";
+      }
+
+      humidity.innerHTML = hum;
+      temperature.innerHTML = tem;
+      day_data.innerHTML = day;
+      time_data.innerHTML = time;
+
+      console.log(hum, tem, day, time, sun);
+
+      // 출력 area에 메시지를 표시한다.
+      //messageTextArea.value += "Recieve From Server => "+message.data+"\n";
+
+
+      chard(hum, tem, sun);
+
+    };
+
+
+    //근대 판정하는 함수 : 온도/ 습도 데이터만가지고 판단
+    function chard(hum, tem, sun) {
+        if (sun == "낮") {
+            if (hum <= 50){
+                chard_hum_message.innerHTML = "습도가 낮아요!";
+            }
+            else if (50< hum <= 65) {
+                chard_hum_message.innerHTML = "습도가 적당해요.";
+            }
+            else if ( 65 > hum ) {
+                chard_hum_message.innerHTML = "습도가 높아요!";
+            }
+
+            if (tem <= 9){
+                chard_tem_message.innerHTML = "온도가 낮아요!";
+            }
+            else if (9 < tem <= 27) {
+                chard_tem_message.innerHTML = "온도가 적당해요.";
+            }
+            else if ( 27 > tem ) {
+                chard_tem_message.innerHTML = "온도가 높아요!";
+            }
+        } else {
+            console.log(typeof(hum));
+            if (hum <= 50){
+                chard_hum_message.innerHTML = "습도가 낮아요!";
+            }
+            else if (50< hum && hum <= 65) {
+                chard_hum_message.innerHTML = "습도가 적당해요.";
+            }
+            else if ( 65 < hum ) {
+                chard_hum_message.innerHTML = "습도가 높아요!";
+            }
+
+            if (tem <= 5){
+                chard_tem_message.innerHTML = "온도가 낮아요!";
+            }
+            else if (5 <= tem && tem <= 10) {
+                chard_tem_message.innerHTML = "온도가 적당해요.";
+                console.log("이거 됨");
+            }
+            else if (10 < tem) {
+                chard_tem_message.innerHTML = "온도가 높아요!";
+            }
+        }
+
+    }
+
+
+
+    // 서버로 메시지를 전송하는 함수
+    function sendMessage(){
+      var message = document.getElementById("textMessage");
+      messageTextArea.value += "Send to Server => "+message.value+"\n";
+      //웹소켓으로 textMessage객체의 값을 보낸다.
+      webSocket.send(message.value);
+      //textMessage객체의 값 초기화
+      message.value = "";
+    }
+    function disconnect(){
+      webSocket.close();
+    }
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
